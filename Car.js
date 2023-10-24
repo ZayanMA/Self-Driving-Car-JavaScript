@@ -1,5 +1,5 @@
 class Car{
-    constructor(x,y,width,height){
+    constructor(x,y,width,height, controlType, maxSpeed=3){
         this.x = x;
         this.y = y;
         this.width = width;
@@ -7,19 +7,37 @@ class Car{
 
         this.speed=0;
         this.acceleration = 0.2;
-        this.maxSpeed=3;
+        this.maxSpeed=maxSpeed;
         this.friction=0.05;
         this.angle=0;
+        this.damaged=false;
 
-        this.sensor=new Sensor(this);
-        this.controls=new Controls();
+        if(controlType!= "DUMMY"){
+            this.sensor=new Sensor(this);
+        }
+        this.controls=new Controls(controlType);
 
     }
 
     update(roadBorders){
-        this.#move();
-        this.polygon=this.#createPolygon();
-        this.sensor.update(roadBorders);
+        if(!this.damaged){
+            this.#move();
+            this.polygon=this.#createPolygon();
+            this.damaged=this.#assessDamage(roadBorders);
+        }
+        if(this.sensor){
+            this.sensor.update(roadBorders);
+        }
+
+    }
+
+    #assessDamage(roadBorders){
+        for(let i=0;i<roadBorders.length;i++){
+            if(polysIntersect(this.polygon,roadBorders[i])){
+                return true;
+            }
+        }
+        return false;
     }
 
     #createPolygon(){
@@ -85,6 +103,11 @@ class Car{
     }
 
     draw(canvasContext){
+        if(this.damaged){
+            canvasContext.fillStyle="gray";
+        }else{
+            canvasContext.fillStyle="black";
+        }
         canvasContext.beginPath();
         canvasContext.moveTo(this.polygon[0].x, this.polygon[0].y);
         for(let i=1;i<this.polygon.length; i++){
@@ -92,6 +115,8 @@ class Car{
         }
         canvasContext.fill();
 
-        this.sensor.draw(canvasContext);
+        if(this.sensor){
+            this.sensor.draw(canvasContext);
+        }
     }
 }
